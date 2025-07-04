@@ -6,6 +6,7 @@
 		"titleBar.inactiveBackground": "#61456899",
 		"titleBar.inactiveForeground": "#e7e7e799"
 	},
+	"editor.formatOnSave": true,
 	"peacock.color": "#614568",
 	"folder-color.pathColors": [
 		{
