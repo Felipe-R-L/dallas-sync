@@ -8,10 +8,88 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Users{
+model User {
   id        String   @id @default(uuid())
   email     String   @unique
-  name      String?
+  password  String
+  name      String
+  role      Role     @relation(fields: [roleId], references: [id])
+  roleId    String
+  tenantId  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  rolesId   String
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String
+  permissions RolePermission[]
+  users       User[]
+}
+
+model Permission {
+  id    String           @id @default(uuid())
+  name  String
+  roles RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  role         Role       @relation(fields: [roleId], references: [id])
+  roleId       String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  permissionId String
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  DIRTY
+  MAINTENANCE
+}
+
+model Room {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  status      RoomStatus @default(AVAILABLE)
+  basePrice   Int
+  tenantId    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  prices      RoomPrice[]
+  Reservation Reservation[]
+}
+
+model RoomPrice {
+  id        String   @id @default(uuid())
+  room      Room     @relation(fields: [roomId], references: [id])
+  roomId    String
+  name      String
+  dayOfWeek Int
+  startTime DateTime
+  endTime   DateTime
+  price     Int
+}
+
+enum ReservationStatus {
+  BOOKED
+  CANCELLED
+  FINISHED
+}
+
+model Reservation {
+  id           String            @id @default(uuid())
+  room         Room              @relation(fields: [roomId], references: [id])
+  roomId       String
+  clientName   String
+  clientPhone  String
+  status       ReservationStatus @default(BOOKED)
+  checkinDate  DateTime
+  checkoutDate DateTime
+  totalPrice   Int
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 }
