@@ -1,5 +1,4 @@
-export type RoomStatus = 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'DIRTY';
-
+import { RoomStatus } from '../enums/room-status.enum';
 export class Room {
   private _status: RoomStatus;
 
@@ -14,7 +13,7 @@ export class Room {
     if (basePrice <= 0) {
       throw Error('Base price must be greater than 0.');
     }
-    if (!['AVAILABLE', 'OCCUPIED', 'MAINTENANCE', 'DIRTY'].includes(status)) {
+    if (!Object.values(RoomStatus).includes(status)) {
       throw Error(`Invalid room status ${status}`);
     }
     this._status = status;
@@ -28,18 +27,18 @@ export class Room {
     if (this._status === 'MAINTENANCE') {
       throw new Error('Cannot mark occupied while in maintenance');
     }
-    this._status = 'OCCUPIED';
+    this._status = RoomStatus.OCCUPIED;
   }
 
   markAvailable() {
-    this._status = 'AVAILABLE';
+    this._status = RoomStatus.AVAILABLE;
   }
 
   markMaintenance() {
-    this._status = 'MAINTENANCE';
+    this._status = RoomStatus.MAINTENANCE;
   }
 
   markDirty() {
-    this._status = 'DIRTY';
+    this._status = RoomStatus.DIRTY;
   }
 }
