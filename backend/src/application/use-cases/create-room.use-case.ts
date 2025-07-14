@@ -1,4 +1,5 @@
 import { Room } from 'src/domain/entities/room';
+import { RoomStatus } from 'src/domain/enums/room-status.enum';
 import { RoomRepository } from 'src/domain/repositories/room-repository';
 
 interface CreateRoomRequest {
@@ -15,7 +16,7 @@ export class CreateRoomUseCase {
       crypto.randomUUID(),
       request.name,
       request.basePrice,
-      'AVAILABLE',
+      RoomStatus.AVAILABLE,
       request.description,
       request.tenantId,
     );
