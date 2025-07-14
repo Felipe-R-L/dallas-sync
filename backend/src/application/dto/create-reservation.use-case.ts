@@ -4,5 +4,5 @@ export interface CreateReservationRequest {
   checkinDate: Date;
   checkoutDate: Date;
   totalPrice: number;
-  tenantId?: number;
+  tenantId?: string;
 }
