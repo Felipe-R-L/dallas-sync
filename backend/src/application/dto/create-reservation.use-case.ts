@@ -3,6 +3,6 @@ export interface CreateReservationRequest {
   userId: string;
   checkinDate: Date;
   checkoutDate: Date;
-  totalPreice: number;
+  totalPrice: number;
   tenantId?: number;
 }
