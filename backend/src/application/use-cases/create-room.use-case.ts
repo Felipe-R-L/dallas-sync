@@ -1,13 +1,7 @@
 import { Room } from 'src/domain/entities/room';
 import { RoomStatus } from 'src/domain/enums/room-status.enum';
 import { RoomRepository } from 'src/domain/repositories/room-repository';
-
-interface CreateRoomRequest {
-  name: string;
-  basePrice: number;
-  description?: string;
-  tenantId?: string;
-}
+import { CreateRoomRequest } from '../dto/create-room-request';
 
 export class CreateRoomUseCase {
   constructor(private readonly roomRepository: RoomRepository) {}
