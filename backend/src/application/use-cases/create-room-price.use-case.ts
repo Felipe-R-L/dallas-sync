@@ -1,6 +1,8 @@
-import { RoomPriceRepository } from 'src/domain/repositories/room-price-repository';
-import { CreateRoomPriceRequest } from '../dto/create-room-price.request';
-import { RoomPrice } from 'src/domain/entities/room-price';
+import { RoomPrice } from 'src/domain/entities/room-price'
+import { RoomPriceRepository } from 'src/domain/repositories/room-price-repository'
+
+import { CreateRoomPriceRequest } from '../dto/create-room-price.request'
+
 export class CreateRoomPriceUseCase {
   constructor(private roomPriceRepository: RoomPriceRepository) {}
 
@@ -10,9 +12,9 @@ export class CreateRoomPriceUseCase {
       data.dayOfWeek,
       data.startTime,
       data.endTime,
-    );
+    )
     if (overlapping) {
-      throw new Error('Overlapping time range already exists for this room');
+      throw new Error('Overlapping time range already exists for this room')
     }
 
     const roomPrice = new RoomPrice(
@@ -23,7 +25,7 @@ export class CreateRoomPriceUseCase {
       data.startTime,
       data.endTime,
       data.price,
-    );
-    await this.roomPriceRepository.create(roomPrice);
+    )
+    await this.roomPriceRepository.create(roomPrice)
   }
 }

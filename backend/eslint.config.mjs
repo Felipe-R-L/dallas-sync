@@ -1,34 +1,47 @@
-// @ts-check
-import eslint from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+// eslint.config.mjs
+import tseslint from '@typescript-eslint/eslint-plugin'
+import tsParser from '@typescript-eslint/parser'
+import eslintPluginImport from 'eslint-plugin-import'
+import simpleImportSort from 'eslint-plugin-simple-import-sort'
+import { defineConfig } from 'eslint/config'
 
-export default tseslint.config(
+export default defineConfig([
   {
-    ignores: ['eslint.config.mjs'],
-  },
-  eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
-  eslintPluginPrettierRecommended,
-  {
+    files: ['**/*.ts', '**/*.tsx'],
+    ignores: ['dist/**', 'generated/**', 'prisma/generated/**'],
+
     languageOptions: {
-      globals: {
-        ...globals.node,
-        ...globals.jest,
-      },
-      sourceType: 'commonjs',
+      parser: tsParser,
       parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
+        project: ['./tsconfig.json'],
+        tsconfigRootDir: process.cwd(),
+        sourceType: 'module',
       },
     },
-  },
-  {
+    plugins: {
+      '@typescript-eslint': tseslint,
+      import: eslintPluginImport,
+      'simple-import-sort': simpleImportSort,
+    },
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn'
+      // TypeScript
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_' },
+      ],
+      '@typescript-eslint/explicit-function-return-type': 'warn',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-inferrable-types': 'warn',
+
+      // Import organization
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+      'import/order': 'off',
+      'import/newline-after-import': 'warn',
+
+      // General
+      'no-console': 'warn',
+      'no-debugger': 'error',
     },
   },
-);
+])

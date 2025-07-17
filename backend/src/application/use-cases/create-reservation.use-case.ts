@@ -1,6 +1,7 @@
-import { ReservationRepository } from 'src/domain/repositories/reservation-repository';
-import { CreateReservationRequest } from '../dto/create-reservation.use-case';
-import { Reservation } from 'src/domain/entities/reservation';
+import { Reservation } from 'src/domain/entities/reservation'
+import { ReservationRepository } from 'src/domain/repositories/reservation-repository'
+
+import { CreateReservationRequest } from '../dto/create-reservation.use-case'
 
 export class CreateReservationUseCase {
   constructor(private reservationRepository: ReservationRepository) {}
@@ -10,9 +11,9 @@ export class CreateReservationUseCase {
         data.roomId,
         data.checkinDate,
         data.checkoutDate,
-      );
+      )
     if (overlappingReservations) {
-      throw new Error('Room already reserved in the selected date range');
+      throw new Error('Room already reserved in the selected date range')
     }
     const reservation = new Reservation(
       crypto.randomUUID(),
@@ -23,7 +24,7 @@ export class CreateReservationUseCase {
       data.totalPrice,
       undefined,
       data.tenantId,
-    );
-    await this.reservationRepository.create(reservation);
+    )
+    await this.reservationRepository.create(reservation)
   }
 }

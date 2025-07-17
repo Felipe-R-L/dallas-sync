@@ -1,8 +1,8 @@
-import { Room } from '../entities/room';
+import { Room } from '../entities/room'
 
 export interface RoomRepository {
-  create(room: Room): Promise<void>;
-  findById(id: string): Promise<Room | null>;
-  findAll(): Promise<Room[]>;
-  update(room: Room): Promise<void>;
+  create(room: Room): Promise<void>
+  findById(id: string): Promise<Room | null>
+  findAll(): Promise<Room[]>
+  update(room: Room): Promise<void>
 }
