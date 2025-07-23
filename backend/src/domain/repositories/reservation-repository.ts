@@ -1,9 +1,9 @@
 import { Reservation } from '../entities/reservation'
 
-export interface ReservationRepository {
-  create(reservation: Reservation): Promise<void>
-  findById(id: string): Promise<Reservation | null>
-  findByRoomBetweenDates(
+export abstract class ReservationRepository {
+  abstract create(reservation: Reservation): Promise<void>
+  abstract findById(id: string): Promise<Reservation | null>
+  abstract findByRoomBetweenDates(
     roomId: string,
     checkin: Date,
     checkout: Date,

@@ -1,8 +1,8 @@
 import { Room } from '../entities/room'
 
-export interface RoomRepository {
-  create(room: Room): Promise<void>
-  findById(id: string): Promise<Room | null>
-  findAll(): Promise<Room[]>
-  update(room: Room): Promise<void>
+export abstract class RoomRepository {
+  abstract create(room: Room): Promise<void>
+  abstract findById(id: string): Promise<Room | null>
+  abstract findAll(): Promise<Room[]>
+  abstract update(room: Room): Promise<void>
 }
