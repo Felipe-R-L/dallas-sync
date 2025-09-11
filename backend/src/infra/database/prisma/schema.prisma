@@ -1,6 +1,8 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
-  output   = "../../../../generated/prisma"
 }
 
 datasource db {
@@ -8,88 +10,445 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// -------------------------------------------
+// 1. Access Control & Users Module
+// -------------------------------------------
+
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String   @id @default(cuid())
+  fullName  String
+  login     String   @unique
   password  String
-  name      String
-  role      Role     @relation(fields: [roleId], references: [id])
-  roleId    String
-  tenantId  String?
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  rolesId   String
+
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  shiftsOpened       Shift[]         @relation("OpenedBy")
+  shiftsClosed       Shift[]         @relation("ClosedBy")
+  expensesCreated    Expense[]
+  stockMovements     StockMovement[]
+  refundsProcessed   Refund[]        @relation("ProcessedByUser")
+  damageFeesReported DamageFee[]     @relation("ReportedByUser")
+  assetHistory       AssetHistory[]  @relation("ChangedByUser")
 }
 
 model Role {
-  id          String           @id @default(uuid())
-  name        String
-  permissions RolePermission[]
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  permissions Permission[]
   users       User[]
 }
 
 model Permission {
-  id    String           @id @default(uuid())
-  name  String
-  roles RolePermission[]
+  id       String @id @default(cuid())
+  action   String
+  resource String
+
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@unique([roleId, action, resource])
 }
 
-model RolePermission {
-  id           String     @id @default(uuid())
-  role         Role       @relation(fields: [roleId], references: [id])
-  roleId       String
-  permission   Permission @relation(fields: [permissionId], references: [id])
-  permissionId String
+// -------------------------------------------
+// 2. Core Entities & Setup Module
+// -------------------------------------------
+
+model RoomType {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  capacity    Int
+
+  rooms           Room[]
+  pricingProfiles Price[]
 }
+
+model Room {
+  id     String     @id @default(cuid())
+  number String     @unique
+  status RoomStatus @default(AVAILABLE)
+  floor  String?
+
+  roomTypeId String
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id])
+
+  stays        Stay[]
+  reservations Reservation[]
+  assets       Asset[]
+
+  assetHistoryFrom AssetHistory[] @relation("FromRoom")
+  assetHistoryTo   AssetHistory[] @relation("ToRoom")
+}
+
+model Product {
+  id            String  @id @default(cuid())
+  name          String
+  description   String?
+  salePrice     Int
+  unitOfMeasure String
+
+  stockMovements   StockMovement[]
+  stayConsumptions StayConsumption[]
+}
+
+model PaymentMethod {
+  id       String  @id @default(cuid())
+  name     String  @unique
+  isActive Boolean @default(true)
+
+  paymentsMade    StayPayment[]
+  cashFlowEntries FinancialTransaction[]
+}
+
+// -------------------------------------------
+// 3. Pricing & Reservations Module
+// -------------------------------------------
+
+model Price {
+  id          String @id @default(cuid())
+  description String
+
+  periodPrice    Int
+  periodHours    Int
+  overnightPrice Int
+  extraHourPrice Int
+
+  applicableDayOfWeek Int?
+  validFrom           DateTime?
+  validUntil          DateTime?
+  isActive            Boolean   @default(true)
+
+  roomTypeId String
+  roomType   RoomType @relation(fields: [roomTypeId], references: [id])
+}
+
+model Reservation {
+  id            String  @id @default(cuid())
+  customerName  String
+  customerPhone String?
+
+  checkInDateTime  DateTime
+  checkOutDateTime DateTime
+
+  depositAmount Int               @default(0)
+  status        ReservationStatus @default(CONFIRMED)
+
+  createdAt DateTime @default(now())
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id])
+}
+
+// -------------------------------------------
+// 4. Operational & Transactional Module
+// -------------------------------------------
+
+model Shift {
+  id      String    @id @default(cuid())
+  startAt DateTime  @default(now())
+  endAt   DateTime?
+
+  openingCash Int
+  closingCash Int?
+
+  status ShiftStatus @default(OPEN)
+
+  openedById String
+  openedBy   User   @relation("OpenedBy", fields: [openedById], references: [id])
+
+  closedById String?
+  closedBy   User?   @relation("ClosedBy", fields: [closedById], references: [id])
+
+  staysOpened     Stay[]                 @relation("OpenedInShift")
+  staysClosed     Stay[]                 @relation("ClosedInShift")
+  cashFlowEntries FinancialTransaction[]
+}
+
+model Stay {
+  id         String    @id @default(cuid())
+  checkInAt  DateTime  @default(now())
+  checkOutAt DateTime?
+
+  vehiclePlate String?
+  stayType     StayType
+
+  roomPrice        Int
+  consumptionTotal Int @default(0)
+  damageFeesTotal  Int @default(0)
+  discounts        Int @default(0)
+  totalAmount      Int @default(0)
+  amountPaid       Int @default(0)
+
+  status StayStatus @default(ACTIVE)
+
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id])
+
+  openedInShiftId String
+  openedInShift   Shift  @relation("OpenedInShift", fields: [openedInShiftId], references: [id])
+
+  closedInShiftId String?
+  closedInShift   Shift?  @relation("ClosedInShift", fields: [closedInShiftId], references: [id])
+
+  consumptions StayConsumption[]
+  payments     StayPayment[]
+  refunds      Refund[]
+  damageFees   DamageFee[]
+}
+
+model StayConsumption {
+  id           String   @id @default(cuid())
+  quantity     Int
+  unitPrice    Int
+  discount     Int      @default(0)
+  registeredAt DateTime @default(now())
+
+  stayId String
+  stay   Stay   @relation(fields: [stayId], references: [id])
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  stockMovement StockMovement?
+}
+
+model StockMovement {
+  id       String            @id @default(cuid())
+  type     StockMovementType
+  quantity Int
+  reason   String?
+  movedAt  DateTime          @default(now())
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  stayConsumptionId String?          @unique
+  stayConsumption   StayConsumption? @relation(fields: [stayConsumptionId], references: [id])
+}
+
+// -------------------------------------------
+// 5. Financial Module
+// -------------------------------------------
+
+model FinancialTransaction {
+  id              String          @id @default(cuid())
+  description     String
+  type            TransactionType
+  amount          Int
+  transactionDate DateTime        @default(now())
+
+  shiftId String
+  shift   Shift  @relation(fields: [shiftId], references: [id])
+
+  paymentMethodId String?
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+
+  stayPaymentId String?      @unique
+  stayPayment   StayPayment? @relation(fields: [stayPaymentId], references: [id])
+
+  expenseId String?  @unique
+  expense   Expense? @relation(fields: [expenseId], references: [id])
+
+  refundId String? @unique
+  refund   Refund? @relation(fields: [refundId], references: [id])
+}
+
+model StayPayment {
+  id          String        @id @default(cuid())
+  amount      Int
+  paymentDate DateTime      @default(now())
+  status      PaymentStatus @default(COMPLETED)
+
+  stayId String
+  stay   Stay   @relation(fields: [stayId], references: [id])
+
+  paymentMethodId String
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+
+  financialTransaction FinancialTransaction?
+  refunds              Refund[]
+}
+
+model Expense {
+  id          String        @id @default(cuid())
+  description String
+  amount      Int
+  dueDate     DateTime
+  paymentDate DateTime?
+  status      ExpenseStatus @default(PENDING)
+
+  registeredById String
+  registeredBy   User   @relation(fields: [registeredById], references: [id])
+
+  financialTransaction FinancialTransaction?
+}
+
+/// NEW MODEL
+model Refund {
+  id        String   @id @default(cuid())
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  processedById String
+  processedBy   User   @relation("ProcessedByUser", fields: [processedById], references: [id])
+
+  stayId String
+  stay   Stay   @relation(fields: [stayId], references: [id])
+
+  originalPaymentId String?
+  originalPayment   StayPayment? @relation(fields: [originalPaymentId], references: [id])
+
+  financialTransaction FinancialTransaction?
+}
+
+// -------------------------------------------
+// 6. NEW MODULE: ASSET MANAGEMENT
+// -------------------------------------------
+
+model AssetType {
+  id              String  @id @default(cuid())
+  name            String  @unique
+  description     String?
+  manufacturer    String?
+  model           String?
+  replacementCost Int
+
+  assets Asset[]
+}
+
+model Asset {
+  id           String      @id @default(cuid())
+  assetTag     String      @unique
+  serialNumber String?
+  status       AssetStatus @default(IN_USE)
+  purchaseDate DateTime?
+
+  assetTypeId String
+  assetType   AssetType @relation(fields: [assetTypeId], references: [id])
+
+  roomId String?
+  room   Room?   @relation(fields: [roomId], references: [id])
+
+  history    AssetHistory[]
+  damageFees DamageFee[]
+}
+
+model AssetHistory {
+  id        String                @id @default(cuid())
+  type      AssetHistoryEventType
+  notes     String?
+  timestamp DateTime              @default(now())
+
+  fromStatus AssetStatus?
+  toStatus   AssetStatus?
+
+  fromRoomId String?
+  fromRoom   Room?   @relation("FromRoom", fields: [fromRoomId], references: [id])
+
+  toRoomId String?
+  toRoom   Room?   @relation("ToRoom", fields: [toRoomId], references: [id])
+
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id])
+
+  changedById String
+  changedBy   User   @relation("ChangedByUser", fields: [changedById], references: [id])
+}
+
+model DamageFee {
+  id        String   @id @default(cuid())
+  amount    Int
+  notes     String
+  createdAt DateTime @default(now())
+
+  stayId String
+  stay   Stay   @relation(fields: [stayId], references: [id])
+
+  assetId String
+  asset   Asset  @relation(fields: [assetId], references: [id])
+
+  reportedById String
+  reportedBy   User   @relation("ReportedByUser", fields: [reportedById], references: [id])
+}
+
+// -------------------------------------------
+// Enums
+// -------------------------------------------
 
 enum RoomStatus {
   AVAILABLE
   OCCUPIED
-  DIRTY
+  CLEANING
   MAINTENANCE
 }
 
-model Room {
-  id          String     @id @default(uuid())
-  name        String
-  description String?
-  status      RoomStatus @default(AVAILABLE)
-  basePrice   Int
-  tenantId    String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  prices      RoomPrice[]
-  Reservation Reservation[]
-}
-
-model RoomPrice {
-  id        String   @id @default(uuid())
-  room      Room     @relation(fields: [roomId], references: [id])
-  roomId    String
-  name      String
-  dayOfWeek Int
-  startTime DateTime
-  endTime   DateTime
-  price     Int
-}
-
 enum ReservationStatus {
-  BOOKED
+  CONFIRMED
   CANCELLED
-  FINISHED
+  CHECKED_IN
+  NO_SHOW
 }
 
-model Reservation {
-  id           String            @id @default(uuid())
-  room         Room              @relation(fields: [roomId], references: [id])
-  roomId       String
-  clientName   String
-  clientPhone  String
-  status       ReservationStatus @default(BOOKED)
-  checkinDate  DateTime
-  checkoutDate DateTime
-  totalPrice   Int
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+enum ShiftStatus {
+  OPEN
+  CLOSED
+}
+
+enum StayType {
+  PERIOD
+  OVERNIGHT
+}
+
+enum StayStatus {
+  ACTIVE
+  FINISHED
+  CANCELLED
+}
+
+enum StockMovementType {
+  IN
+  OUT
+  ADJUSTMENT
+  LOSS
+}
+
+enum TransactionType {
+  REVENUE
+  EXPENSE
+  REFUND
+}
+
+enum ExpenseStatus {
+  PENDING
+  PAID
+}
+
+enum PaymentStatus {
+  COMPLETED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum AssetStatus {
+  IN_USE
+  IN_STORAGE
+  IN_REPAIR
+  DAMAGED
+  RETIRED
+}
+
+enum AssetHistoryEventType {
+  CREATION
+  LOCATION_CHANGE
+  STATUS_CHANGE
+  NOTE
 }
