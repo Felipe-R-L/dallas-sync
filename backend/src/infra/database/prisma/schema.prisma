@@ -11,6 +11,32 @@ datasource db {
 }
 
 // -------------------------------------------
+// 0. Tenancy Module
+// -------------------------------------------
+
+model Tenant {
+  id     String  @id @default(cuid())
+  name   String
+  active Boolean @default(true)
+
+  // Tenant Relations
+  users          User[]
+  roles          Role[]
+  groups         UserGroup[]
+  roomTypes      RoomType[]
+  rooms          Room[]
+  products       Product[]
+  paymentMethods PaymentMethod[]
+  prices         Price[]
+  reservations   Reservation[]
+  shifts         Shift[]
+  stays          Stay[]
+  expenses       Expense[]
+  assetTypes     AssetType[]
+  assets         Asset[]
+}
+
+// -------------------------------------------
 // 1. Access Control & Users Module
 // -------------------------------------------
 
@@ -18,14 +44,20 @@ model User {
   id        String   @id @default(cuid())
   fullName  String
   login     String   @unique
-  password  String
+  password  String /// Stored as a hash
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  roleId String
-  role   Role   @relation(fields: [roleId], references: [id])
+  tenantId String? /// If null, this is a Platform Super Admin
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
 
+  // Granular Permission Relations
+  groups      UserGroup[]
+  roles       Role[]
+  permissions Permission[]
+
+  // Operational Relations
   shiftsOpened       Shift[]         @relation("OpenedBy")
   shiftsClosed       Shift[]         @relation("ClosedBy")
   expensesCreated    Expense[]
@@ -35,23 +67,46 @@ model User {
   assetHistory       AssetHistory[]  @relation("ChangedByUser")
 }
 
-model Role {
-  id          String       @id @default(cuid())
-  name        String       @unique
+model UserGroup {
+  id          String  @id @default(cuid())
+  name        String
   description String?
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
+  users       User[]
+  roles       Role[]
+  permissions Permission[]
+
+  @@unique([tenantId, name])
+}
+
+model Role {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  tenantId String? /// If null, it's a platform-level role (e.g., "Platform Admin")
+  tenant   Tenant? @relation(fields: [tenantId], references: [id])
+
   permissions Permission[]
   users       User[]
+  groups      UserGroup[]
+
+  @@unique([tenantId, name])
 }
 
 model Permission {
   id       String @id @default(cuid())
-  action   String
-  resource String
+  action   String /// e.g., "CREATE", "READ", "UPDATE", "DELETE"
+  resource String /// e.g., "Stay", "User", "AssetReport"
 
-  roleId String
-  role   Role   @relation(fields: [roleId], references: [id])
+  roles  Role[]
+  users  User[]
+  groups UserGroup[]
 
-  @@unique([roleId, action, resource])
+  @@unique([action, resource])
 }
 
 // -------------------------------------------
@@ -64,45 +119,62 @@ model RoomType {
   description String?
   capacity    Int
 
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+
   rooms           Room[]
   pricingProfiles Price[]
 }
 
 model Room {
   id     String     @id @default(cuid())
-  number String     @unique
+  number String
   status RoomStatus @default(AVAILABLE)
   floor  String?
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   roomTypeId String
   roomType   RoomType @relation(fields: [roomTypeId], references: [id])
 
-  stays        Stay[]
-  reservations Reservation[]
-  assets       Asset[]
-
+  stays            Stay[]
+  reservations     Reservation[]
+  assets           Asset[]
   assetHistoryFrom AssetHistory[] @relation("FromRoom")
   assetHistoryTo   AssetHistory[] @relation("ToRoom")
+
+  @@unique([tenantId, number])
 }
 
 model Product {
   id            String  @id @default(cuid())
   name          String
   description   String?
-  salePrice     Int
+  salePrice     Int /// Stored in cents
   unitOfMeasure String
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   stockMovements   StockMovement[]
   stayConsumptions StayConsumption[]
+
+  @@unique([tenantId, name])
 }
 
 model PaymentMethod {
   id       String  @id @default(cuid())
-  name     String  @unique
+  name     String
   isActive Boolean @default(true)
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   paymentsMade    StayPayment[]
   cashFlowEntries FinancialTransaction[]
+
+  @@unique([tenantId, name])
 }
 
 // -------------------------------------------
@@ -110,38 +182,37 @@ model PaymentMethod {
 // -------------------------------------------
 
 model Price {
-  id          String @id @default(cuid())
-  description String
-
-  periodPrice    Int
-  periodHours    Int
-  overnightPrice Int
-  extraHourPrice Int
-
+  id                  String    @id @default(cuid())
+  description         String
+  periodPrice         Int /// Stored in cents
+  periodHours         Int
+  overnightPrice      Int /// Stored in cents
+  extraHourPrice      Int /// Stored in cents
   applicableDayOfWeek Int?
   validFrom           DateTime?
   validUntil          DateTime?
   isActive            Boolean   @default(true)
 
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
   roomTypeId String
   roomType   RoomType @relation(fields: [roomTypeId], references: [id])
 }
 
 model Reservation {
-  id            String  @id @default(cuid())
-  customerName  String
-  customerPhone String?
-
+  id               String            @id @default(cuid())
+  customerName     String
+  customerPhone    String?
   checkInDateTime  DateTime
   checkOutDateTime DateTime
+  depositAmount    Int               @default(0) /// Stored in cents
+  status           ReservationStatus @default(CONFIRMED)
+  createdAt        DateTime          @default(now())
 
-  depositAmount Int               @default(0)
-  status        ReservationStatus @default(CONFIRMED)
-
-  createdAt DateTime @default(now())
-
-  roomId String
-  room   Room   @relation(fields: [roomId], references: [id])
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  roomId   String
+  room     Room   @relation(fields: [roomId], references: [id])
 }
 
 // -------------------------------------------
@@ -149,49 +220,50 @@ model Reservation {
 // -------------------------------------------
 
 model Shift {
-  id      String    @id @default(cuid())
-  startAt DateTime  @default(now())
-  endAt   DateTime?
+  id          String      @id @default(cuid())
+  startAt     DateTime    @default(now())
+  endAt       DateTime?
+  openingCash Int /// Stored in cents
+  closingCash Int? /// Stored in cents
+  status      ShiftStatus @default(OPEN)
 
-  openingCash Int
-  closingCash Int?
-
-  status ShiftStatus @default(OPEN)
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
 
   openedById String
-  openedBy   User   @relation("OpenedBy", fields: [openedById], references: [id])
-
+  openedBy   User    @relation("OpenedBy", fields: [openedById], references: [id])
   closedById String?
   closedBy   User?   @relation("ClosedBy", fields: [closedById], references: [id])
 
-  staysOpened     Stay[]                 @relation("OpenedInShift")
-  staysClosed     Stay[]                 @relation("ClosedInShift")
+  /// MODIFIED: Added relation names to resolve ambiguity
+  staysOpened Stay[] @relation("OpenedInShift")
+  staysClosed Stay[] @relation("ClosedInShift")
+
   cashFlowEntries FinancialTransaction[]
 }
 
 model Stay {
-  id         String    @id @default(cuid())
-  checkInAt  DateTime  @default(now())
-  checkOutAt DateTime?
+  id               String     @id @default(cuid())
+  checkInAt        DateTime   @default(now())
+  checkOutAt       DateTime?
+  vehiclePlate     String?
+  stayType         StayType
+  roomPrice        Int /// Stored in cents
+  consumptionTotal Int        @default(0) /// Stored in cents
+  damageFeesTotal  Int        @default(0) /// Stored in cents
+  discounts        Int        @default(0) /// Stored in cents
+  totalAmount      Int        @default(0) /// Stored in cents
+  amountPaid       Int        @default(0) /// Stored in cents
+  status           StayStatus @default(ACTIVE)
 
-  vehiclePlate String?
-  stayType     StayType
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  roomId   String
+  room     Room   @relation(fields: [roomId], references: [id])
 
-  roomPrice        Int
-  consumptionTotal Int @default(0)
-  damageFeesTotal  Int @default(0)
-  discounts        Int @default(0)
-  totalAmount      Int @default(0)
-  amountPaid       Int @default(0)
-
-  status StayStatus @default(ACTIVE)
-
-  roomId String
-  room   Room   @relation(fields: [roomId], references: [id])
-
+  /// MODIFIED: Added relation names to resolve ambiguity
   openedInShiftId String
-  openedInShift   Shift  @relation("OpenedInShift", fields: [openedInShiftId], references: [id])
-
+  openedInShift   Shift   @relation("OpenedInShift", fields: [openedInShiftId], references: [id])
   closedInShiftId String?
   closedInShift   Shift?  @relation("ClosedInShift", fields: [closedInShiftId], references: [id])
 
@@ -204,13 +276,12 @@ model Stay {
 model StayConsumption {
   id           String   @id @default(cuid())
   quantity     Int
-  unitPrice    Int
-  discount     Int      @default(0)
+  unitPrice    Int /// Stored in cents
+  discount     Int      @default(0) /// Stored in cents
   registeredAt DateTime @default(now())
 
-  stayId String
-  stay   Stay   @relation(fields: [stayId], references: [id])
-
+  stayId    String
+  stay      Stay    @relation(fields: [stayId], references: [id])
   productId String
   product   Product @relation(fields: [productId], references: [id])
 
@@ -226,9 +297,8 @@ model StockMovement {
 
   productId String
   product   Product @relation(fields: [productId], references: [id])
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
 
   stayConsumptionId String?          @unique
   stayConsumption   StayConsumption? @relation(fields: [stayConsumptionId], references: [id])
@@ -242,7 +312,7 @@ model FinancialTransaction {
   id              String          @id @default(cuid())
   description     String
   type            TransactionType
-  amount          Int
+  amount          Int /// Stored in cents
   transactionDate DateTime        @default(now())
 
   shiftId String
@@ -253,23 +323,20 @@ model FinancialTransaction {
 
   stayPaymentId String?      @unique
   stayPayment   StayPayment? @relation(fields: [stayPaymentId], references: [id])
-
-  expenseId String?  @unique
-  expense   Expense? @relation(fields: [expenseId], references: [id])
-
-  refundId String? @unique
-  refund   Refund? @relation(fields: [refundId], references: [id])
+  expenseId     String?      @unique
+  expense       Expense?     @relation(fields: [expenseId], references: [id])
+  refundId      String?      @unique
+  refund        Refund?      @relation(fields: [refundId], references: [id])
 }
 
 model StayPayment {
   id          String        @id @default(cuid())
-  amount      Int
+  amount      Int /// Stored in cents
   paymentDate DateTime      @default(now())
   status      PaymentStatus @default(COMPLETED)
 
-  stayId String
-  stay   Stay   @relation(fields: [stayId], references: [id])
-
+  stayId          String
+  stay            Stay          @relation(fields: [stayId], references: [id])
   paymentMethodId String
   paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
 
@@ -280,30 +347,29 @@ model StayPayment {
 model Expense {
   id          String        @id @default(cuid())
   description String
-  amount      Int
+  amount      Int /// Stored in cents
   dueDate     DateTime
   paymentDate DateTime?
   status      ExpenseStatus @default(PENDING)
 
+  tenantId       String
+  tenant         Tenant @relation(fields: [tenantId], references: [id])
   registeredById String
   registeredBy   User   @relation(fields: [registeredById], references: [id])
 
   financialTransaction FinancialTransaction?
 }
 
-/// NEW MODEL
 model Refund {
   id        String   @id @default(cuid())
-  amount    Int
+  amount    Int /// Stored in cents
   reason    String
   createdAt DateTime @default(now())
 
-  processedById String
-  processedBy   User   @relation("ProcessedByUser", fields: [processedById], references: [id])
-
-  stayId String
-  stay   Stay   @relation(fields: [stayId], references: [id])
-
+  processedById     String
+  processedBy       User         @relation("ProcessedByUser", fields: [processedById], references: [id])
+  stayId            String
+  stay              Stay         @relation(fields: [stayId], references: [id])
   originalPaymentId String?
   originalPayment   StayPayment? @relation(fields: [originalPaymentId], references: [id])
 
@@ -311,71 +377,72 @@ model Refund {
 }
 
 // -------------------------------------------
-// 6. NEW MODULE: ASSET MANAGEMENT
+// 6. Asset Management Module
 // -------------------------------------------
 
 model AssetType {
   id              String  @id @default(cuid())
-  name            String  @unique
+  name            String
   description     String?
   manufacturer    String?
   model           String?
-  replacementCost Int
+  replacementCost Int /// Stored in cents
 
-  assets Asset[]
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  assets   Asset[]
+
+  @@unique([tenantId, name])
 }
 
 model Asset {
   id           String      @id @default(cuid())
-  assetTag     String      @unique
+  assetTag     String
   serialNumber String?
   status       AssetStatus @default(IN_USE)
   purchaseDate DateTime?
 
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id])
   assetTypeId String
   assetType   AssetType @relation(fields: [assetTypeId], references: [id])
-
-  roomId String?
-  room   Room?   @relation(fields: [roomId], references: [id])
+  roomId      String?
+  room        Room?     @relation(fields: [roomId], references: [id])
 
   history    AssetHistory[]
   damageFees DamageFee[]
+
+  @@unique([tenantId, assetTag])
 }
 
 model AssetHistory {
-  id        String                @id @default(cuid())
-  type      AssetHistoryEventType
-  notes     String?
-  timestamp DateTime              @default(now())
-
+  id         String                @id @default(cuid())
+  type       AssetHistoryEventType
+  notes      String?
+  timestamp  DateTime              @default(now())
   fromStatus AssetStatus?
   toStatus   AssetStatus?
-
   fromRoomId String?
-  fromRoom   Room?   @relation("FromRoom", fields: [fromRoomId], references: [id])
+  fromRoom   Room?                 @relation("FromRoom", fields: [fromRoomId], references: [id])
+  toRoomId   String?
+  toRoom     Room?                 @relation("ToRoom", fields: [toRoomId], references: [id])
 
-  toRoomId String?
-  toRoom   Room?   @relation("ToRoom", fields: [toRoomId], references: [id])
-
-  assetId String
-  asset   Asset  @relation(fields: [assetId], references: [id])
-
+  assetId     String
+  asset       Asset  @relation(fields: [assetId], references: [id])
   changedById String
   changedBy   User   @relation("ChangedByUser", fields: [changedById], references: [id])
 }
 
 model DamageFee {
   id        String   @id @default(cuid())
-  amount    Int
+  amount    Int /// Stored in cents
   notes     String
   createdAt DateTime @default(now())
 
-  stayId String
-  stay   Stay   @relation(fields: [stayId], references: [id])
-
-  assetId String
-  asset   Asset  @relation(fields: [assetId], references: [id])
-
+  stayId       String
+  stay         Stay   @relation(fields: [stayId], references: [id])
+  assetId      String
+  asset        Asset  @relation(fields: [assetId], references: [id])
   reportedById String
   reportedBy   User   @relation("ReportedByUser", fields: [reportedById], references: [id])
 }
