@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 
-import { AppController } from './app.controller'
-import { HttpModule } from './infra/http/http.module'
+import { HttpModule } from './management/infra/http/http.module'
 
 @Module({
   imports: [
@@ -12,6 +11,7 @@ import { HttpModule } from './infra/http/http.module'
     }),
     HttpModule,
   ],
-  controllers: [AppController],
+  controllers: [],
+  providers: [],   
 })
 export class AppModule {}
