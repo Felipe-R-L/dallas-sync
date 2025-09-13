@@ -1,197 +1,106 @@
 # Dallas Sync
 
-É um ERP focado no setor moteleiro, desenvolvido em conjunto com um cliente real, pensado para atender as necessidades da operação e facilitando o dia a dia dos colaboradores.
-O objetivo do projeto é evitar pitfalls comuns em ERPs "one-size-fits-all", fornecendo algo minimalista, fácil de usar e que agregue valor real aos clientes. Sem features desnecessárias, design mal estruturado e UI lenta e cheia de bugs.
+[![Project Status](https://img.shields.io/badge/status-in%20development-yellowgreen)](https://github.com/your-username/dallas-sync)
+[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
-## 🛠️ Stack
+**Dallas Sync** is a SaaS, Multi-Tenant ERP (Enterprise Resource Planning) focused on the motel industry. The system was co-developed with a real client, designed to meet the operational needs and simplify the daily tasks of employees.
 
-### Front-end
+## 🎯 Project Philosophy
 
-- **Angular**
-- **Storybook** — documentação do design system
-- **Tailwind CSS** — estilos consistentes, leves e modernos
+The project's goal is to avoid the common pitfalls of "one-size-fits-all" ERPs by providing a solution that is:
+* **Minimalist and Focused:** No unnecessary features that complicate usage.
+* **Easy to Use:** With an intuitive design and a performant UI.
+* **Stable and Reliable:** Built on a modern and robust codebase.
+
+> For an in-depth look at the architecture, data model, and development plan, please read **[Project Vision Document](./PROJECT.md)**.
+
+---
+
+## 🛠️ Tech Stack
 
 ### Back-end
+- **Framework:** NestJS
+- **ORM:** Prisma
+- **Database:** PostgreSQL
+- **Containerization:** Docker
 
-- **NestJS**
-- **Prisma ORM**
-- **PostgreSQL**
-- **Docker**
-
-
-# ERP de Motelaria - Arquitetura e Modelo de Dados
-
-Este documento descreve a arquitetura do banco de dados e a estratégia de implementação para um sistema ERP de motelaria. A stack de tecnologia definida é:
-
-
-A arquitetura geral segue os padrões de **Monolito Modular**, **Clean Architecture** e **Domain-Driven Design (DDD)**, com um modelo de dados **Multi-Tenant**.
-
-## Modelo de Dados
-
-A fonte para a estrutura do banco de dados é o arquivo `schema.prisma`. Este documento é a base para geração do SQL puro das migrations pelo Prisma ORM.
+### Front-end
+- **Framework:** Angular
+- **Component Library:** Storybook
+- **Styling:** Tailwind CSS
 
 ---
 
-## Bounded Contexts (Contextos Delimitados)
+## 🚀 Getting Started
 
-O sistema é dividido nos seguintes contextos de negócio, cada um com suas responsabilidades, modelos e enums.
+Follow the steps below to set up and run the local development environment.
 
-### 1. Identity & Access Management (IAM) Context
+### Prerequisites
+* [Node.js](https://nodejs.org/) (version 20.x or higher)
+* [pnpm](https://pnpm.io/) (or `npm`/`yarn`)
+* [Docker](https://www.docker.com/) and Docker Compose
 
-Este contexto é responsável por tudo relacionado a identidade, autenticação e autorização. Ele gerencia quem pode acessar o sistema e o que cada um pode fazer.
+### 1. Clone the Repository
+```bash
+git clone [https://github.com/your-username/dallas-sync.git](https://github.com/your-username/dallas-sync.git)
+cd dallas-sync
+```
 
-* **Responsabilidades:** Gerenciamento de tenants (clientes), controle de usuários, autenticação (login), sistema de permissões granulares, grupos e cargos.
-* **Models (Tabelas):**
-    * `Tenant`
-    * `User`
-    * `UserGroup`
-    * `Role`
-    * `Permission`
-* **Enums:** N/A
+### 2. Install Dependencies
+```bash
+# Navigate to the backend or frontend folder
+cd backend
+pnpm install
+```
 
-### 2. Accommodations & Assets Context
+### 3. Configure Environment Variables
+Create a `.env` file in the backend's root directory, based on the `.env.example`.
+```env
+DATABASE_HOST = localhost
+DATABASE_PORT = 5432
+DATABASE_USER = postgres
+DATABASE_PASSWORD  = postgres
+DATABASE_NAME = postgres
 
-Este contexto lida com a estrutura física e o patrimônio do estabelecimento.
+POSTGRES_DB = postgres
+POSTGRES_USER = postgres
+POSTGRES_PASSWORD = dallasroot
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
+```
 
-* **Responsabilidades:** Cadastro e gerenciamento de tipos de quartos, quartos físicos, e o inventário de todo o patrimônio (móveis, eletrônicos, etc.), incluindo seu histórico e localização.
-* **Models (Tabelas):**
-    * `RoomType`
-    * `Room`
-    * `AssetType`
-    * `Asset`
-    * `AssetHistory`
-* **Enums:**
-    * `RoomStatus`
-    * `AssetStatus`
-    * `AssetHistoryEventType`
+### 4. Start the Database with Docker
+From the project's root directory, run:
+```bash
+docker-compose up -d
+```
+This will start a PostgreSQL container with the settings defined in `docker-compose.yml`.
 
-### 3. Core Operations Context
+### 5. Run Prisma Migrations
+With the database running, apply the schema:
+```bash
+# Inside the backend folder
+pnpm prisma migrate dev
+```
 
-O coração do sistema. Este contexto gerencia o fluxo principal da operação de um motel: a estadia do cliente do início ao fim.
-
-* **Responsabilidades:** Gerenciamento de reservas, o processo de check-in e check-out, registro de consumo, e cobrança por danos ao patrimônio.
-* **Models (Tabelas):**
-    * `Price`
-    * `Reservation`
-    * `Stay`
-    * `StayConsumption`
-    * `DamageFee`
-* **Enums:**
-    * `ReservationStatus`
-    * `StayType`
-    * `StayStatus`
-
-### 4. Finance & Inventory Context
-
-Este contexto gerencia todo o fluxo financeiro e de estoque do negócio.
-
-* **Responsabilidades:** Controle de turnos de caixa, registro de todas as transações financeiras (entradas e saídas), processamento de pagamentos e estornos, cadastro de despesas, e movimentação do estoque de produtos consumíveis.
-* **Models (Tabelas):**
-    * `Shift`
-    * `FinancialTransaction`
-    * `PaymentMethod`
-    * `StayPayment`
-    * `Expense`
-    * `Refund`
-    * `Product`
-    * `StockMovement`
-* **Enums:**
-    * `ShiftStatus`
-    * `TransactionType`
-    * `PaymentStatus`
-    * `ExpenseStatus`
-    * `StockMovementType`
+### 6. Run the Application
+```bash
+# Development mode (with hot-reload)
+pnpm start:dev
+```
+The API will be available at `http://localhost:3000`.
 
 ---
 
-## Roadmap de Implementação
+## 📜 Key Scripts
 
-Este roteiro sugere uma ordem lógica de desenvolvimento para construir o sistema de forma incremental e segura.
+* `pnpm start:dev`: Starts the application in development mode.
+* `pnpm build`: Compiles the project for production.
+* `pnpm test`: Runs the unit tests.
+* `pnpm prisma:studio`: Opens the Prisma Studio UI to view and edit data.
+* `pnpm prisma:generate`: Generates the Prisma Client after changes to `schema.prisma`.
 
-### Fase 0: Configuração e Base do Projeto
+---
 
-* [ ] Inicializar o projeto NestJS.
-* [ ] Configurar o Prisma e conectar com o banco de dados PostgreSQL.
-* [ ] Rodar a migração inicial para criar as tabelas (`prisma migrate dev`).
-* [ ] Configurar ferramentas de qualidade de código (ESLint, Prettier).
-* [ ] Implementar um logger centralizado
-* [ ] Configurar variáveis de ambiente (`.env`).
+## 📄 License
 
-### Fase 1: IAM - O Núcleo de Segurança
-
-* [ ] **CRUD para `Tenant`:** Criar endpoints para o Super Admin gerenciar os tenants.
-* [ ] **Prisma Middleware para Multi-Tenancy:** Implementar o middleware que injeta o `tenantId` automaticamente em todas as queries para garantir o isolamento dos dados.
-* [ ] **Autenticação:**
-    * [ ] Criar `AuthModule`.
-    * [ ] Implementar endpoint de login (`/auth/login`) que retorna um JWT.
-    * [ ] Configurar a estratégia JWT com Passport.js.
-* [ ] **Autorização (Permissions Guard):**
-    * [ ] Criar um `Guard` global do NestJS.
-    * [ ] Implementar a lógica que calcula o conjunto de permissões do usuário (diretas, de grupos, de cargos).
-    * [ ] Proteger os endpoints com base nas permissões (`@RequirePermission('CREATE', 'Stay')`).
-* [ ] **CRUDs do IAM:**
-    * [ ] CRUD completo para `User`.
-    * [ ] CRUD completo para `Role` e associação com `Permission`.
-    * [ ] CRUD completo para `UserGroup` e associação com `User`, `Role` e `Permission`.
-
-### Fase 2: Cadastros Essenciais (Core Setup)
-
-* [ ] **Accommodations:**
-    * [ ] CRUD para `RoomType`.
-    * [ ] CRUD para `Room` (incluindo atualização de `status`).
-* [ ] **Inventory & Assets:**
-    * [ ] CRUD para `Product`.
-    * [ ] CRUD para `AssetType`.
-    * [ ] CRUD para `Asset` (incluindo a lógica para criar `AssetHistory` em mudanças de status ou localização).
-* [ ] **Finance:**
-    * [ ] CRUD para `PaymentMethod`.
-
-### Fase 3: Fluxo Principal de Operação
-
-* [ ] **Precificação Dinâmica:** Criar `PriceService` que saiba encontrar o preço correto para um `RoomType` em uma determinada data/hora.
-* [ ] **Turnos (`Shift`):** Implementar `use-cases` para abrir e fechar turnos de caixa.
-* [ ] **Check-in (`Stay`):**
-    * [ ] Criar o `use-case` de check-in, que cria um `Stay`, associa ao `Shift` aberto, e atualiza o `Room.status`.
-* [ ] **Consumo (`StayConsumption`):**
-    * [ ] Criar endpoint para adicionar itens de consumo a um `Stay` ativo.
-    * [ ] Implementar a lógica de abatimento de estoque (`StockMovement`) ao adicionar um consumo.
-* [ ] **Check-out (`Stay`):**
-    * [ ] Criar o `use-case` de check-out, o mais complexo:
-        * [ ] Calcula o valor total (diária + consumo + taxas - descontos).
-        * [ ] Processa um ou mais `StayPayment`.
-        * [ ] Para cada pagamento, cria um `FinancialTransaction`.
-        * [ ] Finaliza o `Stay` (`status: FINISHED`).
-        * [ ] Atualiza o `Room.status` para `CLEANING`.
-
-### Fase 4: Módulos de Suporte
-
-* [ ] **Reservas (`Reservation`):**
-    * [ ] CRUD para `Reservation`.
-    * [ ] Criar lógica para converter uma `Reservation` em um `Stay` no momento do check-in.
-* [ ] **Despesas (`Expense`):** CRUD para gerenciar e registrar o pagamento de despesas.
-* [ ] **Danos ao Patrimônio (`DamageFee`):** Criar endpoint para adicionar uma taxa de dano a um `Stay`.
-* [ ] **Estornos (`Refund`):** Criar endpoint para processar um estorno, associado a um `StayPayment` e que gera uma transação financeira de saída.
-
-### Fase 5: Relatórios e BI
-
-* [ ] Criar um `ReportsModule` com endpoints `GET` para:
-    * [ ] Relatório de Ocupação.
-    * [ ] Relatório de Faturamento (diário, por turno, por período).
-    * [ ] Relatório de Despesas.
-    * [ ] Relatório Financeiro Geral (Receitas vs Despesas).
-    * [ ] Relatório de Estoque.
-    * [ ] Relatório de Placas (diário, mensal).
-
-### Fase 6: Front-end (Angular)
-
-* [ ] Configurar o projeto Angular.
-* [ ] Implementar um `HttpClientInterceptor` para injetar o JWT nas requisições.
-* [ ] Desenvolver um `AuthGuard` para proteger as rotas.
-* [ ] Construir as telas seguindo a ordem das fases de implementação do back-end (telas de Login e Cadastros primeiro, depois o fluxo operacional, etc.).
-
-### Fase 7: Deploy e Produção
-
-* [ ] Configurar pipeline de CI/CD (GitHub Actions).
-* [ ] Estratégia de migração do banco de dados para produção (`prisma migrate deploy`).
-* [ ] Configurar e gerenciar variáveis de ambiente de produção.
-* [ ] Escolher e configurar o ambiente de hospedagem (ex: Docker, serviço de nuvem).
+This project is licensed under the MIT License and The Commons Clause. See the [LICENSE](./LICENSE) file for details.
