@@ -1,17 +1,17 @@
-import { Entity } from "src/core/entities/entity";
-import { UniqueEntityID } from "src/core/entities/unique-entity-id";
-import { Optional } from "src/core/types/optional";
+import { Entity } from 'src/core/entities/entity'
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { Optional } from 'src/core/types/optional'
 
-export interface TenantProps{
-    cnpj: string
-    name: string
-    active: boolean
-    createdAt: Date
-    updatedAt: Date
-    deletedAt?: Date | null
+export interface TenantProps {
+  cnpj: string
+  name: string
+  active: boolean
+  createdAt: Date
+  updatedAt: Date
+  deletedAt?: Date | null
 }
 
-export class Tenant extends Entity<TenantProps>{
+export class Tenant extends Entity<TenantProps> {
   get cnpj(): string {
     return this.props.cnpj
   }
@@ -23,18 +23,18 @@ export class Tenant extends Entity<TenantProps>{
   }
   get createdAt(): Date {
     return this.props.createdAt
-  } 
-  get updatedAt(): Date { 
+  }
+  get updatedAt(): Date {
     return this.props.updatedAt
   }
-  get deletedAt(): Date | null | undefined{
+  get deletedAt(): Date | null | undefined {
     return this.props.deletedAt
   }
 
-  touch(): void{
+  touch(): void {
     this.props.updatedAt = new Date()
   }
-    delete(): void {
+  delete(): void {
     this.props.deletedAt = new Date()
     this.touch()
   }
@@ -43,21 +43,23 @@ export class Tenant extends Entity<TenantProps>{
     this.touch()
   }
 
-  set cnpj(cnpj: string){
+  set cnpj(cnpj: string) {
     this.props.cnpj = cnpj
     this.touch()
   }
-  set name(name: string){
+  set name(name: string) {
     this.props.name = name
     this.touch()
   }
-  set active(active: boolean){
+  set active(active: boolean) {
     this.props.active = active
     this.touch()
   }
 
-
-  static create( props: Optional<TenantProps, 'createdAt' | 'updatedAt'>, id?: UniqueEntityID): Tenant {
+  static create(
+    props: Optional<TenantProps, 'createdAt' | 'updatedAt'>,
+    id?: UniqueEntityID,
+  ): Tenant {
     const now = new Date()
     const tenant = new Tenant(
       {
@@ -67,7 +69,7 @@ export class Tenant extends Entity<TenantProps>{
         createdAt: props.createdAt ?? now,
         updatedAt: props.updatedAt ?? now,
         deletedAt: props.deletedAt ?? null,
-    },
+      },
       id,
     )
     return tenant

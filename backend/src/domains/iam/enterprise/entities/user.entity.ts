@@ -1,19 +1,19 @@
-import { Entity } from "src/core/entities/entity";
-import { UniqueEntityID } from "src/core/entities/unique-entity-id";
-import { Optional } from "src/core/types/optional";
+import { Entity } from 'src/core/entities/entity'
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { Optional } from 'src/core/types/optional'
 
-export interface UserProps{
-    fullName: string
-    email: string
-    password: string
-    active: boolean
-    tenantId?: UniqueEntityID | null
-    createdAt: Date
-    updatedAt: Date
-    deletedAt?: Date | null
+export interface UserProps {
+  fullName: string
+  email: string
+  password: string
+  active: boolean
+  tenantId?: UniqueEntityID | null
+  createdAt: Date
+  updatedAt: Date
+  deletedAt?: Date | null
 }
 
-export class User extends Entity<UserProps>{
+export class User extends Entity<UserProps> {
   get fullName(): string {
     return this.props.fullName
   }
@@ -31,15 +31,15 @@ export class User extends Entity<UserProps>{
   }
   get createdAt(): Date {
     return this.props.createdAt
-  } 
-  get updatedAt(): Date { 
+  }
+  get updatedAt(): Date {
     return this.props.updatedAt
   }
-  get deletedAt(): Date | null | undefined { 
+  get deletedAt(): Date | null | undefined {
     return this.props.deletedAt
   }
 
-  touch(): void{
+  touch(): void {
     this.props.updatedAt = new Date()
   }
   delete(): void {
@@ -51,29 +51,28 @@ export class User extends Entity<UserProps>{
     this.touch()
   }
 
-  set fullName(fullName: string){
+  set fullName(fullName: string) {
     this.props.fullName = fullName
     this.touch()
   }
-  set email(email: string){
+  set email(email: string) {
     this.props.email = email
     this.touch()
   }
-  set password(password: string){
+  set password(password: string) {
     this.props.password = password
     this.touch()
   }
-  set active(active: boolean){
+  set active(active: boolean) {
     this.props.active = active
     this.touch()
   }
-  set tenantId(tenantId: UniqueEntityID | null | undefined){
+  set tenantId(tenantId: UniqueEntityID | null | undefined) {
     this.props.tenantId = tenantId
     this.touch()
-  } 
+  }
 
-
-  static create( props: Optional<UserProps, 'createdAt' | 'updatedAt'>, id?: UniqueEntityID): User {
+  static create(props: Optional<UserProps, 'createdAt' | 'updatedAt'>, id?: UniqueEntityID): User {
     const now = new Date()
     const user = new User(
       {
@@ -85,7 +84,7 @@ export class User extends Entity<UserProps>{
         createdAt: props.createdAt ?? now,
         updatedAt: props.updatedAt ?? now,
         deletedAt: props.deletedAt ?? null,
-    },
+      },
       id,
     )
     return user

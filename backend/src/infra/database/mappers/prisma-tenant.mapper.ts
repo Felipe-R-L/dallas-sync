@@ -1,6 +1,6 @@
-import { Prisma, Tenant as PrismaTenant } from '@prisma/client';
-import { UniqueEntityID } from 'src/core/entities/unique-entity-id';
-import { Tenant } from 'src/domains/iam/enterprise/entities/tenant.entity';
+import { Prisma, Tenant as PrismaTenant } from '@prisma/client'
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { Tenant } from 'src/domains/iam/enterprise/entities/tenant.entity'
 
 export class PrismaTenantMapper {
   static toDomain(raw: PrismaTenant): Tenant {
@@ -14,7 +14,7 @@ export class PrismaTenantMapper {
         deletedAt: raw.deletedAt,
       },
       new UniqueEntityID(raw.id),
-    );
+    )
   }
 
   static toPrisma(tenant: Tenant): Prisma.TenantUncheckedCreateInput {
@@ -26,6 +26,6 @@ export class PrismaTenantMapper {
       createdAt: tenant.createdAt,
       updatedAt: tenant.updatedAt,
       deletedAt: tenant.deletedAt,
-    };
+    }
   }
 }

@@ -1,6 +1,6 @@
-import { UniqueEntityID } from "src/core/entities/unique-entity-id";
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
-import { UserGroup } from "../../enterprise/entities/user-group.entity";
+import { UserGroup } from '../../enterprise/entities/user-group.entity'
 
 export abstract class UserGroupsRepository {
   abstract create(UserGroup: UserGroup): Promise<void>

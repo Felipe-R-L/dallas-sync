@@ -1,6 +1,6 @@
-import { UniqueEntityID } from "src/core/entities/unique-entity-id";
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
-import { Tenant } from "../../enterprise/entities/tenant.entity";
+import { Tenant } from '../../enterprise/entities/tenant.entity'
 
 export abstract class TenantsRepository {
   abstract create(tenant: Tenant): Promise<void>

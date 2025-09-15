@@ -1,7 +1,6 @@
-import { UniqueEntityID } from "src/core/entities/unique-entity-id";
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
 
-import { Permission } from "../../enterprise/entities/permission.entity";
-
+import { Permission } from '../../enterprise/entities/permission.entity'
 
 export abstract class PermissionsRepository {
   abstract create(Permission: Permission): Promise<void>

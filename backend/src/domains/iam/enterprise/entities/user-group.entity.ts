@@ -1,17 +1,17 @@
-import { Entity } from "src/core/entities/entity";
-import { UniqueEntityID } from "src/core/entities/unique-entity-id";
-import { Optional } from "src/core/types/optional";
+import { Entity } from 'src/core/entities/entity'
+import { UniqueEntityID } from 'src/core/entities/unique-entity-id'
+import { Optional } from 'src/core/types/optional'
 
-export interface UserGroupProps{
-    name: string
-    description?: string | null
-    tenantId: UniqueEntityID
-    createdAt: Date
-    updatedAt: Date
-    deletedAt?: Date | null
+export interface UserGroupProps {
+  name: string
+  description?: string | null
+  tenantId: UniqueEntityID
+  createdAt: Date
+  updatedAt: Date
+  deletedAt?: Date | null
 }
 
-export class UserGroup extends Entity<UserGroupProps>{
+export class UserGroup extends Entity<UserGroupProps> {
   get name(): string {
     return this.props.name
   }
@@ -23,15 +23,15 @@ export class UserGroup extends Entity<UserGroupProps>{
   }
   get createdAt(): Date {
     return this.props.createdAt
-  } 
-  get updatedAt(): Date { 
+  }
+  get updatedAt(): Date {
     return this.props.updatedAt
   }
-  get deletedAt(): Date | null | undefined { 
+  get deletedAt(): Date | null | undefined {
     return this.props.deletedAt
   }
-  
-  touch(): void{
+
+  touch(): void {
     this.props.updatedAt = new Date()
   }
   delete(): void {
@@ -43,20 +43,23 @@ export class UserGroup extends Entity<UserGroupProps>{
     this.touch()
   }
 
-  set name(name: string){
+  set name(name: string) {
     this.props.name = name
     this.touch()
   }
-  set description(description: string | null | undefined){
+  set description(description: string | null | undefined) {
     this.props.description = description
     this.touch()
   }
-  set tenantId(tenantId: UniqueEntityID){
+  set tenantId(tenantId: UniqueEntityID) {
     this.props.tenantId = tenantId
     this.touch()
   }
 
-  static create( props: Optional<UserGroupProps, 'createdAt' | 'updatedAt'>, id?: UniqueEntityID): UserGroup {
+  static create(
+    props: Optional<UserGroupProps, 'createdAt' | 'updatedAt'>,
+    id?: UniqueEntityID,
+  ): UserGroup {
     const now = new Date()
     const userGroup = new UserGroup(
       {
@@ -66,7 +69,7 @@ export class UserGroup extends Entity<UserGroupProps>{
         createdAt: props.createdAt ?? now,
         updatedAt: props.updatedAt ?? now,
         deletedAt: props.deletedAt ?? null,
-    },
+      },
       id,
     )
     return userGroup
