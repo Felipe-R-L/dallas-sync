@@ -2,7 +2,7 @@ import { Entity } from "src/core/entities/entity";
 import { UniqueEntityID } from "src/core/entities/unique-entity-id";
 import { Optional } from "src/core/types/optional";
 
-export interface UserProps{
+export interface UserGroupProps{
     name: string
     description?: string | null
     tenantId: UniqueEntityID
@@ -11,7 +11,7 @@ export interface UserProps{
     deletedAt?: Date | null
 }
 
-export class User extends Entity<UserProps>{
+export class UserGroup extends Entity<UserGroupProps>{
   get name(): string {
     return this.props.name
   }
@@ -56,9 +56,9 @@ export class User extends Entity<UserProps>{
     this.touch()
   }
 
-  static create( props: Optional<UserProps, 'createdAt' | 'updatedAt'>, id?: UniqueEntityID): User {
+  static create( props: Optional<UserGroupProps, 'createdAt' | 'updatedAt'>, id?: UniqueEntityID): UserGroup {
     const now = new Date()
-    const user = new User(
+    const userGroup = new UserGroup(
       {
         name: props.name,
         description: props.description ?? null,
@@ -69,6 +69,6 @@ export class User extends Entity<UserProps>{
     },
       id,
     )
-    return user
+    return userGroup
   }
 }
