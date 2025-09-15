@@ -7,6 +7,7 @@ export interface UserProps{
     email: string
     password: string
     active: boolean
+    tenantId?: UniqueEntityID | null
     createdAt: Date
     updatedAt: Date
     deletedAt?: Date | null
@@ -24,6 +25,9 @@ export class User extends Entity<UserProps>{
   }
   get active(): boolean {
     return this.props.active
+  }
+  get tenantId(): UniqueEntityID | null | undefined {
+    return this.props.tenantId
   }
   get createdAt(): Date {
     return this.props.createdAt
@@ -63,6 +67,10 @@ export class User extends Entity<UserProps>{
     this.props.active = active
     this.touch()
   }
+  set tenantId(tenantId: UniqueEntityID | null | undefined){
+    this.props.tenantId = tenantId
+    this.touch()
+  } 
 
 
   static create( props: Optional<UserProps, 'createdAt' | 'updatedAt'>, id?: UniqueEntityID): User {
@@ -73,6 +81,7 @@ export class User extends Entity<UserProps>{
         email: props.email,
         password: props.password,
         active: props.active ?? true,
+        tenantId: props.tenantId ?? null,
         createdAt: props.createdAt ?? now,
         updatedAt: props.updatedAt ?? now,
         deletedAt: props.deletedAt ?? null,
