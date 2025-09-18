@@ -5,6 +5,7 @@ import { Optional } from 'src/core/types/optional'
 export interface PermissionProps {
   action: string
   resource: string
+  tenantId?: UniqueEntityID | null
   createdAt: Date
   updatedAt: Date
   deletedAt?: Date | null
@@ -16,6 +17,9 @@ export class Permission extends Entity<PermissionProps> {
   }
   get resource(): string {
     return this.props.resource
+  }
+  get tenantId(): UniqueEntityID | null | undefined {
+    return this.props.tenantId
   }
   get createdAt(): Date {
     return this.props.createdAt
@@ -47,6 +51,10 @@ export class Permission extends Entity<PermissionProps> {
     this.props.resource = resource
     this.touch()
   }
+  set tenantId(tenantId: UniqueEntityID | null | undefined) {
+    this.props.tenantId = tenantId
+    this.touch()
+  }
 
   static create(
     props: Optional<PermissionProps, 'createdAt' | 'updatedAt'>,
@@ -57,6 +65,7 @@ export class Permission extends Entity<PermissionProps> {
       {
         action: props.action,
         resource: props.resource,
+        tenantId: props.tenantId ?? null,
 
         createdAt: props.createdAt ?? now,
         updatedAt: props.updatedAt ?? now,

@@ -105,6 +105,7 @@ model Permission {
   id        String    @id @default(cuid())
   action    String
   resource  String
+  tenantId  String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
