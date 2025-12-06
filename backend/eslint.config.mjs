@@ -1,47 +1,50 @@
 // eslint.config.mjs
-import tseslint from '@typescript-eslint/eslint-plugin'
-import tsParser from '@typescript-eslint/parser'
-import eslintPluginImport from 'eslint-plugin-import'
+import eslint from '@eslint/js'
+import tseslint from 'typescript-eslint'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
-import { defineConfig } from 'eslint/config'
+import prettierConfig from 'eslint-config-prettier'
+import globals from 'globals'
 
-export default defineConfig([
+export default tseslint.config(
   {
-    files: ['**/*.ts', '**/*.tsx'],
-    ignores: ['dist/**', 'generated/**', 'prisma/generated/**'],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '.eslintrc.js'],
+  },
+  // Configurações recomendadas do JS e TS
+  eslint.configs.recommended,
+  ...tseslint.configs.recommended,
 
+  // Configuração principal
+  {
     languageOptions: {
-      parser: tsParser,
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+      },
       parserOptions: {
         project: ['./tsconfig.json'],
-        tsconfigRootDir: process.cwd(),
-        sourceType: 'module',
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     plugins: {
-      '@typescript-eslint': tseslint,
-      import: eslintPluginImport,
       'simple-import-sort': simpleImportSort,
     },
     rules: {
-      // TypeScript
-      '@typescript-eslint/no-unused-vars': [
-        'warn',
-        { argsIgnorePattern: '^_' },  
-      ],
-      '@typescript-eslint/explicit-function-return-type': 'warn',
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-inferrable-types': 'warn',
-
-      // Import organization
+      // Regras de Ordenação de Imports
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
-      'import/order': 'off',
-      'import/newline-after-import': 'warn',
 
-      // General
+      // Regras do TypeScript (ajustadas para NestJS)
+      '@typescript-eslint/interface-name-prefix': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+
+      // Regras Gerais
       'no-console': 'warn',
-      'no-debugger': 'error',
     },
   },
-])
+
+  // Prettier deve vir por último para desativar regras conflitantes
+  prettierConfig,
+)

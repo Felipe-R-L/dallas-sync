@@ -4,42 +4,90 @@ import { PrismaClient } from '@prisma/client'
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   constructor() {
-    super()
-
-    this.$use(async (params, next) => {
-      const softDeleteModels = ['User', 'Tenant', 'Room', 'Stay', 'Asset'] as const
-      const isSoftDeleteModel = params.model && softDeleteModels.includes(params.model as any)
-
-      const includeDeleted =
-        (params.args?.meta as { includeDeleted?: boolean } | undefined)?.includeDeleted === true
-
-      if (isSoftDeleteModel && !includeDeleted) {
-        if (params.action === 'findUnique' || params.action === 'findFirst') {
-          params.action = 'findFirst'
-          params.args ||= {}
-          params.args.where ||= {}
-          params.args.where.deletedAt = null
-        }
-
-        if (params.action === 'findMany') {
-          params.args ||= {}
-          if (params.args.where) {
-            if (params.args.where.deletedAt === undefined) {
-              params.args.where.deletedAt = null
-            }
-          } else {
-            params.args.where = { deletedAt: null }
-          }
-        }
-      }
-
-      if (params.args?.meta) {
-        const { meta, ...rest } = params.args
-        params.args = rest
-      }
-
-      return next(params)
+    super({
+      log: ['warn', 'error'],
     })
+
+    const softDeleteModels = [
+      'User',
+      'Tenant',
+      'UserGroup',
+      'Role',
+      'Permission',
+      'RoomType',
+      'Room',
+      'Product',
+      'PaymentMethod',
+      'Reservation',
+      'Shift',
+      'FinancialTransaction',
+      'AssetType',
+    ]
+
+    const extendedClient = this.$extends({
+      name: 'soft-delete',
+      query: {
+        $allModels: {
+          async findUnique({ model, args, query }) {
+            if (softDeleteModels.includes(model) && !(args as any).where.deletedAt) {
+              return (query as any)({
+                ...args,
+                where: {
+                  ...args.where,
+                  deletedAt: null,
+                },
+                action: 'findFirst',
+              })
+            }
+            return query(args)
+          },
+
+          async findFirst({ model, args, query }) {
+            if (softDeleteModels.includes(model)) {
+              const explicitDeleteFilter = (args as any).where?.deletedAt !== undefined
+
+              if (!explicitDeleteFilter) {
+                args.where = { ...args.where, deletedAt: null }
+              }
+            }
+            return query(args)
+          },
+
+          async findMany({ model, args, query }) {
+            if (softDeleteModels.includes(model)) {
+              const explicitDeleteFilter = (args as any).where?.deletedAt !== undefined
+
+              if (!explicitDeleteFilter) {
+                args.where = { ...args.where, deletedAt: null }
+              }
+            }
+            return query(args)
+          },
+
+          async delete({ model, args, query }) {
+            if (softDeleteModels.includes(model)) {
+              return (this as any).update({
+                ...args,
+                data: { deletedAt: new Date() },
+              })
+            }
+            return query(args)
+          },
+
+          async deleteMany({ model, args, query }) {
+            if (softDeleteModels.includes(model)) {
+              return (this as any).updateMany({
+                ...args,
+                data: { deletedAt: new Date() },
+              })
+            }
+            return query(args)
+          },
+        },
+      },
+    })
+
+    return extendedClient as any
   }
 
   async onModuleInit(): Promise<void> {
